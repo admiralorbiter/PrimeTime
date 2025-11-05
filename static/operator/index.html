@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrimeTime Operator UI</title>
+    <link rel="stylesheet" href="/operator/styles/main.css">
+</head>
+<body>
+    <div class="operator-layout">
+        <!-- Left Panel: Asset Bins (placeholder) -->
+        <aside class="left-panel">
+            <h2>Assets</h2>
+            <div class="asset-bins-placeholder">
+                <p>Asset bins will appear here</p>
+            </div>
+        </aside>
+        
+        <!-- Center: Timeline Track (placeholder) -->
+        <main class="timeline-panel">
+            <h2>Timeline</h2>
+            <div class="timeline-track-placeholder">
+                <p>Timeline track will appear here</p>
+            </div>
+        </main>
+        
+        <!-- Right Panel: Inspector & Status -->
+        <aside class="right-panel">
+            <h2>Inspector</h2>
+            <div class="inspector-placeholder">
+                <p>Inspector will appear here</p>
+            </div>
+            
+            <!-- Status Bar -->
+            <status-bar></status-bar>
+        </aside>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.5.4/socket.io.esm.min.js"></script>
+    <script type="module" src="/operator/components/status-bar.js"></script>
+    <script type="module" src="/operator/operator.js"></script>
+</body>
+</html>
+
