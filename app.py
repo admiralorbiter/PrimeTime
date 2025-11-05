@@ -41,8 +41,16 @@ init_db(app)
 from routes import websocket
 websocket.register_websocket_handlers(socketio)
 
+# Register API routes
+from routes import api
+app.register_blueprint(api.api)
+
 # Initialize asset watcher
 asset_watcher = None
+
+# Initialize playback manager (will be created in websocket handlers)
+from playback import PlaybackManager
+playback_manager = None
 
 # Routes
 @app.route('/')
