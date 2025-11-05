@@ -56,6 +56,17 @@ class OperatorUI {
                 sceneControls.updateFPS(data.fps);
             }
         });
+        
+        // Listen for performance warnings
+        document.addEventListener('performance-warning', (event) => {
+            const { message, sceneId } = event.detail;
+            console.warn('Performance warning:', message, sceneId);
+            // Show toast notification if scene-controls component exists
+            const sceneControls = document.querySelector('scene-controls');
+            if (sceneControls && sceneControls.showToast) {
+                sceneControls.showToast(`Performance: ${message}`, 'warning');
+            }
+        });
 
         // Handle server responses
         this.socket.on('status', (data) => {

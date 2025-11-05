@@ -8,6 +8,12 @@ import { io } from 'https://cdn.socket.io/4.5.4/socket.io.esm.min.js';
 import { Renderer } from './utils/renderer.js';
 import { SceneManager } from './utils/scene-manager.js';
 import { Lissajous } from './scenes/Lissajous.js';
+import { PolarRoses } from './scenes/PolarRoses.js';
+import { Spirograph } from './scenes/Spirograph.js';
+import { DigitsRain } from './scenes/DigitsRain.js';
+import { UlamSpiral } from './scenes/UlamSpiral.js';
+import { ConwayLife } from './scenes/ConwayLife.js';
+import { Mandelbrot } from './scenes/Mandelbrot.js';
 
 class ShowView {
     constructor() {
@@ -30,6 +36,12 @@ class ShowView {
                 
                 // Register scenes
                 this.sceneManager.registerScene('lissajous', Lissajous);
+                this.sceneManager.registerScene('polar-roses', PolarRoses);
+                this.sceneManager.registerScene('spirograph', Spirograph);
+                this.sceneManager.registerScene('digits-rain', DigitsRain);
+                this.sceneManager.registerScene('ulam-spiral', UlamSpiral);
+                this.sceneManager.registerScene('conway-life', ConwayLife);
+                this.sceneManager.registerScene('mandelbrot', Mandelbrot);
                 
                 // Handle canvas resize
                 window.addEventListener('resize', () => {

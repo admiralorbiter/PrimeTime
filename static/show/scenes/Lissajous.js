@@ -13,6 +13,8 @@ export class Lissajous extends MathVisuals {
     }
     
     getDefaultParams() {
+        // Use theme color for default
+        const defaultColor = this.getThemeColor('accent_green', '#39FF14');
         return {
             a: 3,           // Frequency ratio for x-axis (1-10)
             b: 2,           // Frequency ratio for y-axis (1-10)
@@ -21,7 +23,7 @@ export class Lissajous extends MathVisuals {
             amplitude: 0.4, // Amplitude (as fraction of canvas size)
             lineWidth: 2,
             trailAlpha: 0.05, // Alpha for trail fade
-            color: '#39FF14'  // Neon green
+            color: defaultColor  // Use theme color
         };
     }
     

@@ -3,6 +3,8 @@
  * All math scenes should extend this class
  */
 
+import { themeManager } from '../utils/theme.js';
+
 export class MathVisuals {
     constructor(canvas, ctx) {
         this.canvas = canvas;
@@ -13,6 +15,56 @@ export class MathVisuals {
         this.isActive = false;
         this.startTime = null;
         this.currentTime = 0;
+        this.theme = themeManager;
+    }
+    
+    /**
+     * Get theme color
+     * @param {string} colorKey - Color key from theme
+     * @param {string} fallback - Fallback color
+     * @returns {string} Color value
+     */
+    getThemeColor(colorKey, fallback = '#FFFFFF') {
+        return this.theme.getColor(colorKey, fallback);
+    }
+    
+    /**
+     * Get all theme colors
+     * @returns {Object} Colors object
+     */
+    getThemeColors() {
+        return this.theme.getColors();
+    }
+    
+    /**
+     * Reduce complexity for performance guardrails
+     * Override in subclasses to implement specific reduction strategies
+     */
+    reduceComplexity() {
+        // Default implementation - reduce common performance-sensitive parameters
+        const params = this.params || {};
+        
+        // Reduce density/particle counts by 50%
+        if (params.density !== undefined) {
+            this.updateParams({ density: Math.max(0.1, params.density * 0.5) });
+        }
+        
+        // Reduce max iterations by 50%
+        if (params.maxIter !== undefined) {
+            this.updateParams({ maxIter: Math.max(10, Math.floor(params.maxIter * 0.5)) });
+        }
+        
+        // Increase cell size (fewer cells)
+        if (params.cellSize !== undefined) {
+            this.updateParams({ cellSize: Math.min(20, params.cellSize * 1.5) });
+        }
+        
+        // Disable glow effects
+        if (params.petalGlow !== undefined) {
+            this.updateParams({ petalGlow: 0 });
+        }
+        
+        console.log('MathVisuals: Complexity reduced for performance');
     }
     
     /**

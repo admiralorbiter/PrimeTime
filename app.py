@@ -109,6 +109,15 @@ def index():
     return redirect('/operator')
 
 
+@app.route('/themes/<path:filename>')
+def serve_theme(filename):
+    """Serve theme JSON files."""
+    from flask import send_from_directory
+    import os
+    themes_dir = os.path.join(app.root_path, 'themes')
+    return send_from_directory(themes_dir, filename)
+
+
 if __name__ == '__main__':
     # Ensure data directory exists
     data_dir = app.config['DATA_DIR']
