@@ -10,11 +10,15 @@ class OperatorUI {
     constructor() {
         this.socket = null;
         this.connectionStatus = document.getElementById('connection-status');
+        // Expose to window for scene-controls component
+        window.operatorUI = this;
         this.init();
     }
 
     init() {
         this.setupWebSocket();
+        this.setupPingButton();
+        this.setupFullscreenToggle();
         console.log('Operator UI initialized');
     }
 
@@ -43,10 +47,90 @@ class OperatorUI {
             this.updateConnectionStatus('Connection Error', 'error');
         });
 
+        // FPS update handler (from show view)
+        this.socket.on('SHOW_FPS_UPDATE', (data) => {
+            console.log('FPS update:', data);
+            // Forward to scene controls component if it exists
+            const sceneControls = document.querySelector('scene-controls');
+            if (sceneControls && sceneControls.updateFPS) {
+                sceneControls.updateFPS(data.fps);
+            }
+        });
+
         // Handle server responses
         this.socket.on('status', (data) => {
             console.log('Server status:', data);
         });
+
+        // Ping/Pong handlers
+        this.socket.on('CONTROL_PONG', (data) => {
+            const roundTripTime = Date.now() - data.timestamp;
+            console.log(`Pong received! Round-trip time: ${roundTripTime}ms`);
+            this.displayPingResult(roundTripTime);
+        });
+    }
+    
+    setupPingButton() {
+        const testButton = document.getElementById('test-connection-btn');
+        if (testButton) {
+            testButton.addEventListener('click', () => {
+                if (this.socket && this.socket.connected) {
+                    this.sendPing();
+                } else {
+                    this.displayPingResult(null, 'Not connected');
+                }
+            });
+        }
+    }
+    
+    setupFullscreenToggle() {
+        const toggleBtn = document.getElementById('toggle-fullscreen-btn');
+        const preview = document.getElementById('show-preview');
+        
+        if (toggleBtn && preview) {
+            toggleBtn.addEventListener('click', () => {
+                if (preview.requestFullscreen) {
+                    preview.requestFullscreen().catch(err => {
+                        console.error('Error attempting to enable fullscreen:', err);
+                    });
+                } else if (preview.webkitRequestFullscreen) {
+                    preview.webkitRequestFullscreen();
+                } else if (preview.mozRequestFullScreen) {
+                    preview.mozRequestFullScreen();
+                } else if (preview.msRequestFullscreen) {
+                    preview.msRequestFullscreen();
+                }
+            });
+        }
+    }
+    
+    sendPing() {
+        const pingData = {
+            timestamp: Date.now()
+        };
+        console.log('Sending ping...', pingData);
+        this.socket.emit('CONTROL_PING', pingData);
+    }
+    
+    displayPingResult(roundTripTime, error = null) {
+        const pingResultElement = document.getElementById('ping-result');
+        if (!pingResultElement) return;
+        
+        if (error) {
+            pingResultElement.textContent = `Error: ${error}`;
+            pingResultElement.className = 'ping-result error';
+        } else if (roundTripTime !== null) {
+            pingResultElement.textContent = `Round-trip time: ${roundTripTime}ms`;
+            pingResultElement.className = 'ping-result success';
+        }
+        
+        // Clear result after 5 seconds
+        setTimeout(() => {
+            if (pingResultElement) {
+                pingResultElement.textContent = '';
+                pingResultElement.className = 'ping-result';
+            }
+        }, 5000);
     }
 
     updateConnectionStatus(text, className) {

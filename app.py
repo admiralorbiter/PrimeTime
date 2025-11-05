@@ -53,6 +53,55 @@ def handle_show_disconnect():
     print('Show View disconnected')
 
 
+# Ping/Pong handlers for connection testing
+@socketio.on('CONTROL_PING', namespace='/control')
+def handle_control_ping(data):
+    """Handle ping from operator UI and relay to show view."""
+    print(f'Received ping from operator UI: {data}')
+    # Relay ping to show view
+    socketio.emit('SHOW_PING', data, namespace='/show')
+
+
+@socketio.on('SHOW_PONG', namespace='/show')
+def handle_show_pong(data):
+    """Handle pong from show view and relay back to operator UI."""
+    print(f'Received pong from show view: {data}')
+    # Relay pong back to operator UI
+    socketio.emit('CONTROL_PONG', data, namespace='/control')
+
+
+# Scene control handlers (Phase 1B)
+@socketio.on('CONTROL_START_SCENE', namespace='/control')
+def handle_control_start_scene(data):
+    """Handle start scene command from operator UI."""
+    print(f'Start scene command: {data}')
+    # Relay to show view
+    socketio.emit('SHOW_START_SCENE', data, namespace='/show')
+
+
+@socketio.on('CONTROL_UPDATE_PARAMS', namespace='/control')
+def handle_control_update_params(data):
+    """Handle parameter update from operator UI."""
+    print(f'Update params command: {data}')
+    # Relay to show view
+    socketio.emit('SHOW_UPDATE_PARAMS', data, namespace='/show')
+
+
+@socketio.on('CONTROL_STOP_SCENE', namespace='/control')
+def handle_control_stop_scene(data):
+    """Handle stop scene command from operator UI."""
+    print('Stop scene command')
+    # Relay to show view
+    socketio.emit('SHOW_STOP_SCENE', {}, namespace='/show')
+
+
+@socketio.on('SHOW_FPS_UPDATE', namespace='/show')
+def handle_show_fps_update(data):
+    """Handle FPS update from show view and relay to operator UI."""
+    # Relay FPS to operator UI
+    socketio.emit('SHOW_FPS_UPDATE', data, namespace='/control')
+
+
 @app.route('/')
 def index():
     """Root route redirects to operator UI."""
