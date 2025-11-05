@@ -17,7 +17,9 @@ class Config:
     
     # Flask-SocketIO settings
     SOCKETIO_ASYNC_MODE = os.environ.get('SOCKETIO_ASYNC_MODE', 'threading')
-    SOCKETIO_CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
+    # Handle CORS: '*' means allow all, otherwise split comma-separated origins
+    cors_origins = os.environ.get('CORS_ORIGINS', '*')
+    SOCKETIO_CORS_ALLOWED_ORIGINS = '*' if cors_origins == '*' else cors_origins.split(',')
     
     # Static files
     STATIC_FOLDER = 'static'

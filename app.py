@@ -17,7 +17,11 @@ app.config.from_object(config[config_name])
 
 # Initialize extensions
 db.init_app(app)
-socketio = SocketIO(app, cors_allowed_origins=app.config['SOCKETIO_CORS_ALLOWED_ORIGINS'])
+socketio = SocketIO(
+    app, 
+    async_mode=app.config['SOCKETIO_ASYNC_MODE'],
+    cors_allowed_origins=app.config['SOCKETIO_CORS_ALLOWED_ORIGINS']
+)
 migrate = Migrate(app, db)
 
 # Register blueprints
