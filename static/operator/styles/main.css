@@ -1,13 +1,17 @@
-/* Operator UI Styles */
+/**
+ * Main stylesheet for Operator UI
+ * Uses CSS variables for theming
+ */
+
 :root {
     --bg-color: #0f1115;
     --fg-color: #F4F4F4;
     --accent-green: #39FF14;
     --accent-cyan: #00E5FF;
-    --accent-pink: #FF3AF2;
-    --accent-yellow: #FFE600;
-    --font-heading: 'Bebas Neue', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-heading: 'Arial', sans-serif;
+    --font-body: 'Arial', sans-serif;
+    --card-bg: #1a1d24;
+    --border-color: #2a2d35;
 }
 
 * {
@@ -17,151 +21,74 @@
 }
 
 body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
     background: var(--bg-color);
     color: var(--fg-color);
     font-family: var(--font-body);
+    line-height: 1.6;
+    min-height: 100vh;
 }
 
-.operator-layout {
-    display: grid;
-    grid-template-columns: 250px 1fr 300px;
-    grid-template-rows: 1fr;
-    height: 100vh;
-    gap: 1px;
-    background: #1a1d24;
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
-.left-panel,
-.right-panel {
-    background: var(--bg-color);
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.left-panel h2,
-.right-panel h2,
-.timeline-panel h2 {
+h1 {
     font-family: var(--font-heading);
-    font-size: 24px;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
     color: var(--accent-green);
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.timeline-panel {
-    background: var(--bg-color);
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.asset-bins-placeholder,
-.timeline-track-placeholder,
-.inspector-placeholder {
-    padding: 40px;
     text-align: center;
-    color: #666;
-    font-style: italic;
-    border: 2px dashed #333;
-    border-radius: 4px;
 }
 
-/* Status Bar Component */
-status-bar {
-    display: block;
-    margin-top: 20px;
-    padding: 15px;
-    background: #1a1d24;
-    border-radius: 4px;
-    border: 1px solid #333;
+.welcome-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-status-bar .status-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-status-bar .status-item {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-status-bar .status-label {
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-status-bar .status-value {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--accent-green);
+.welcome-card h2 {
     font-family: var(--font-heading);
-}
-
-status-bar .status-value.connected {
-    color: var(--accent-green);
-}
-
-status-bar .status-value.disconnected {
-    color: #ff4444;
-}
-
-status-bar .status-value.timecode {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
     color: var(--accent-cyan);
 }
 
-/* Transport Controls Component */
-transport-controls {
-    display: block;
-    margin-top: 20px;
-    padding: 15px;
-    background: #1a1d24;
+.welcome-card p {
+    font-size: 1.1rem;
+    color: var(--fg-color);
+    opacity: 0.9;
+}
+
+.status-indicator {
+    text-align: center;
+    padding: 1rem;
+}
+
+#connection-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
-    border: 1px solid #333;
+    font-weight: bold;
+    transition: all 0.3s ease;
 }
 
-transport-controls .transport-controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
+#connection-status.connected {
+    background-color: var(--accent-green);
+    color: var(--bg-color);
 }
 
-transport-controls .transport-btn {
-    background: transparent;
-    border: 2px solid var(--accent-green);
-    color: var(--accent-green);
-    padding: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 48px;
-    min-height: 48px;
+#connection-status.disconnected {
+    background-color: #ff4444;
+    color: white;
 }
 
-transport-controls .transport-btn:hover {
-    background: rgba(57, 255, 20, 0.1);
-    border-color: var(--accent-cyan);
-    color: var(--accent-cyan);
-}
-
-transport-controls .transport-btn:active {
-    transform: scale(0.95);
-}
-
-transport-controls .transport-btn.play-pause {
-    min-width: 64px;
-    min-height: 64px;
-    border-width: 3px;
+#connection-status.error {
+    background-color: #ff8800;
+    color: white;
 }
 

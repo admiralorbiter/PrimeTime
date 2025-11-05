@@ -1,85 +1,77 @@
 """Flask application entry point for PrimeTime."""
 import os
-from flask import Flask, send_from_directory, redirect
+from flask import Flask
 from flask_socketio import SocketIO
 from flask_migrate import Migrate
+from config import config
 from models import db
 from database import init_db
-from asset_pipeline import AssetWatcher
-import config
+from routes import register_blueprints
 
-# Initialize Flask app
-app = Flask(__name__, static_folder='static', static_url_path='')
+# Create Flask app
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # Load configuration
-app.config['SECRET_KEY'] = config.SECRET_KEY
-app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
-app.config['ASSETS_PATH'] = config.ASSETS_PATH
+config_name = os.environ.get('FLASK_ENV', 'default')
+app.config.from_object(config[config_name])
 
 # Initialize extensions
 db.init_app(app)
+socketio = SocketIO(app, cors_allowed_origins=app.config['SOCKETIO_CORS_ALLOWED_ORIGINS'])
 migrate = Migrate(app, db)
-# Use 'threading' async mode for Python 3.12 compatibility (eventlet has SSL issues)
-socketio = SocketIO(
-    app,
-    cors_allowed_origins=config.SOCKETIO_CORS_ORIGINS,
-    ping_interval=config.SOCKETIO_PING_INTERVAL,
-    ping_timeout=config.SOCKETIO_PING_TIMEOUT,
-    async_mode=config.SOCKETIO_ASYNC_MODE
-)
 
-# Ensure data directory exists
-os.makedirs(config.DATA_DIR, exist_ok=True)
+# Register blueprints
+register_blueprints(app)
 
-# Initialize database (will be called before first request)
-# Note: Flask 2.2+ deprecated @app.before_first_request, so we initialize directly
-init_db(app)
+# Database initialization will be handled in __main__ block
 
-# Register WebSocket handlers
-from routes import websocket
-websocket.register_websocket_handlers(socketio)
 
-# Register API routes
-from routes import api
-app.register_blueprint(api.api)
+# SocketIO event handlers
+@socketio.on('connect', namespace='/control')
+def handle_control_connect(auth):
+    """Handle operator UI connection."""
+    print(f'Operator UI connected: {auth}')
+    return {'status': 'connected'}
 
-# Initialize asset watcher
-asset_watcher = None
 
-# Initialize playback manager (will be created in websocket handlers)
-from playback import PlaybackManager
-playback_manager = None
+@socketio.on('connect', namespace='/show')
+def handle_show_connect(auth):
+    """Handle show view connection."""
+    print(f'Show View connected: {auth}')
+    return {'status': 'connected'}
 
-# Routes
+
+@socketio.on('disconnect', namespace='/control')
+def handle_control_disconnect():
+    """Handle operator UI disconnection."""
+    print('Operator UI disconnected')
+
+
+@socketio.on('disconnect', namespace='/show')
+def handle_show_disconnect():
+    """Handle show view disconnection."""
+    print('Show View disconnected')
+
+
 @app.route('/')
 def index():
-    """Redirect root to operator UI."""
+    """Root route redirects to operator UI."""
+    from flask import redirect
     return redirect('/operator')
 
 
-@app.route('/show')
-def show_view():
-    """Serve Show View page."""
-    return send_from_directory('static/show', 'index.html')
-
-
-@app.route('/operator')
-def operator_ui():
-    """Serve Operator UI page."""
-    return send_from_directory('static/operator', 'index.html')
-
-
 if __name__ == '__main__':
-    # Start asset watcher
-    asset_watcher = AssetWatcher(app)
-    asset_watcher.start()
+    # Ensure data directory exists
+    data_dir = app.config['DATA_DIR']
+    if isinstance(data_dir, str):
+        os.makedirs(data_dir, exist_ok=True)
+    else:
+        data_dir.mkdir(parents=True, exist_ok=True)
     
-    try:
-        # Start the server
-        socketio.run(app, debug=config.DEBUG, host=config.HOST, port=config.PORT)
-    finally:
-        # Stop asset watcher on shutdown
-        if asset_watcher:
-            asset_watcher.stop()
+    # Initialize database
+    with app.app_context():
+        init_db()
+    
+    # Run application
+    socketio.run(app, debug=app.config['DEBUG'], host='0.0.0.0', port=5000)
 

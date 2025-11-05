@@ -1,109 +1,64 @@
-/** Operator UI controller - main application logic. */
+/**
+ * Main Operator UI controller
+ * Handles WebSocket connection and UI initialization
+ */
+
+// Import Socket.io client
 import { io } from 'https://cdn.socket.io/4.5.4/socket.io.esm.min.js';
 
 class OperatorUI {
     constructor() {
         this.socket = null;
-        this.statusBar = null;
-        
-        // Initialize
+        this.connectionStatus = document.getElementById('connection-status');
+        this.init();
+    }
+
+    init() {
         this.setupWebSocket();
-        this.setupStatusBar();
+        console.log('Operator UI initialized');
     }
-    
-    setupStatusBar() {
-        // Status bar component should be available after DOM is ready
-        // Try immediately first, then with a small delay if needed
-        this.statusBar = document.querySelector('status-bar');
-        if (!this.statusBar) {
-            // Wait a bit for custom element to register
-            setTimeout(() => {
-                this.statusBar = document.querySelector('status-bar');
-                if (!this.statusBar) {
-                    console.warn('Status bar component not found');
-                } else {
-                    // Update connection status if we already have a socket connection
-                    if (this.socket && this.socket.connected) {
-                        this.updateConnectionStatus(true);
-                    }
-                }
-            }, 100);
-        } else {
-            // Component is ready, update if already connected
-            if (this.socket && this.socket.connected) {
-                this.updateConnectionStatus(true);
-            }
-        }
-    }
-    
+
     setupWebSocket() {
-        // Connect to /control namespace
+        // Connect to control namespace
         this.socket = io('/control', {
             autoConnect: true,
             reconnection: true,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000
         });
-        
-        // Connection events
+
+        // Connection event handlers
         this.socket.on('connect', () => {
-            console.log('Operator UI connected to server');
-            // Ensure status bar is available before updating
-            if (!this.statusBar) {
-                this.statusBar = document.querySelector('status-bar');
-            }
-            this.updateConnectionStatus(true);
-            
-            // Request asset list (for future phases)
-            // this.socket.emit('ASSET_INDEX_REQUEST', {});
+            console.log('Connected to server');
+            this.updateConnectionStatus('Connected', 'connected');
         });
-        
+
         this.socket.on('disconnect', () => {
-            console.log('Operator UI disconnected from server');
-            this.updateConnectionStatus(false);
+            console.log('Disconnected from server');
+            this.updateConnectionStatus('Disconnected', 'disconnected');
         });
-        
+
         this.socket.on('connect_error', (error) => {
-            console.error('Operator UI connection error:', error);
-            this.updateConnectionStatus(false);
+            console.error('Connection error:', error);
+            this.updateConnectionStatus('Connection Error', 'error');
         });
-        
-        // Ping/Pong handlers
-        this.socket.on('PING', (data) => {
-            console.log('PING received:', data);
-            this.socket.emit('PONG', { timestamp: Date.now(), echo: 'pong' });
-        });
-        
-        this.socket.on('PONG', (data) => {
-            console.log('PONG received:', data);
+
+        // Handle server responses
+        this.socket.on('status', (data) => {
+            console.log('Server status:', data);
         });
     }
-    
-    updateConnectionStatus(connected) {
-        if (this.statusBar) {
-            this.statusBar.setConnected(connected);
-        }
-    }
-    
-    updateFPS(fps) {
-        if (this.statusBar) {
-            this.statusBar.setFPS(fps);
-        }
-    }
-    
-    updateTimecode(timecodeMs) {
-        if (this.statusBar) {
-            this.statusBar.setTimecode(timecodeMs);
+
+    updateConnectionStatus(text, className) {
+        if (this.connectionStatus) {
+            this.connectionStatus.textContent = text;
+            this.connectionStatus.className = className;
         }
     }
 }
 
-// Initialize Operator UI when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        new OperatorUI();
-    });
-} else {
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
     new OperatorUI();
-}
+});
 

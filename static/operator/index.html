@@ -3,42 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrimeTime Operator UI</title>
-    <link rel="stylesheet" href="/operator/styles/main.css">
+    <title>PrimeTime - Operator UI</title>
+    <link rel="stylesheet" href="/static/operator/styles/main.css">
 </head>
 <body>
-    <div class="operator-layout">
-        <!-- Left Panel: Asset Bins (placeholder) -->
-        <aside class="left-panel">
-            <h2>Assets</h2>
-            <div class="asset-bins-placeholder">
-                <p>Asset bins will appear here</p>
-            </div>
-        </aside>
-        
-        <!-- Center: Timeline Track (placeholder) -->
-        <main class="timeline-panel">
-            <h2>Timeline</h2>
-            <div class="timeline-track-placeholder">
-                <p>Timeline track will appear here</p>
-            </div>
-        </main>
-        
-        <!-- Right Panel: Inspector & Status -->
-        <aside class="right-panel">
-            <h2>Inspector</h2>
-            <div class="inspector-placeholder">
-                <p>Inspector will appear here</p>
-            </div>
-            
-            <!-- Status Bar -->
-            <status-bar></status-bar>
-        </aside>
-    </div>
+    <main class="container">
+        <h1>PrimeTime Operator UI</h1>
+        <welcome-card 
+            title="Welcome to PrimeTime"
+            message="The show control system is ready. WebSocket connection will be established automatically.">
+        </welcome-card>
+        <div id="status" class="status-indicator">
+            <span id="connection-status">Connecting...</span>
+        </div>
+    </main>
     
-    <script src="https://cdn.socket.io/4.5.4/socket.io.esm.min.js"></script>
-    <script type="module" src="/operator/components/status-bar.js"></script>
-    <script type="module" src="/operator/operator.js"></script>
+    <!-- Socket.io client from CDN -->
+    <script type="module" src="https://cdn.socket.io/4.5.4/socket.io.esm.min.js"></script>
+    <!-- Web Component -->
+    <script type="module" src="/static/operator/components/welcome-card.js"></script>
+    <!-- Main controller -->
+    <script type="module" src="/static/operator/operator.js"></script>
 </body>
 </html>
 

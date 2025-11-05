@@ -1,12 +1,12 @@
-"""SQLAlchemy models for PrimeTime database."""
+"""SQLAlchemy models for PrimeTime application."""
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+import json
 
 db = SQLAlchemy()
 
 
 class Timeline(db.Model):
-    """Timeline configuration stored as JSON."""
+    """Timeline configuration model."""
     __tablename__ = 'timelines'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -37,7 +37,7 @@ class Timeline(db.Model):
 
 
 class Asset(db.Model):
-    """File metadata for all media assets."""
+    """Media asset metadata model."""
     __tablename__ = 'assets'
     
     id = db.Column(db.String(255), primary_key=True)  # UUID or hash-based ID
@@ -85,7 +85,7 @@ class Asset(db.Model):
 
 
 class AssetThumbnail(db.Model):
-    """Cached thumbnail images (JPEG blobs) for fast UI display."""
+    """Cached thumbnail images model."""
     __tablename__ = 'asset_thumbnails'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -114,7 +114,7 @@ class AssetThumbnail(db.Model):
 
 
 class Setting(db.Model):
-    """Key-value store for application settings."""
+    """Application settings key-value store."""
     __tablename__ = 'settings'
     
     key = db.Column(db.String(100), primary_key=True)
@@ -130,7 +130,7 @@ class Setting(db.Model):
 
 
 class PlaybackState(db.Model):
-    """Current playback position and state (for recovery after disconnect)."""
+    """Current playback position and state."""
     __tablename__ = 'playback_state'
     
     id = db.Column(db.Integer, primary_key=True)  # Always 1
