@@ -1,129 +1,304 @@
 # Roadmap & Phased Plan
 
 ## Overview
-Phase 1 is broken down into vertical slices (1A-1K), each delivering independently testable functionality. Slices are ordered to prove architecture early, deliver incremental value, and defer complexity until core UX works.
+Phase 1 follows a rendering-first approach, starting with math visualizations to establish the core engine, then layering music, text, photos, and video. Each phase is a vertical slice delivering independently testable functionality with UI controls, error handling, and acceptance tests.
 
-## Phase 1A: Foundation (Core Infrastructure)
+## Development Order Rationale
+1. **Math Visuals First** - Proves Canvas/WebGL rendering without asset dependencies
+2. **Music Next** - Adds audio layer, independent of complex media
+3. **Text Cards** - Simple Canvas rendering with animations
+4. **Photos** - Introduces asset pipeline incrementally
+5. **Video Last** - Most complex, builds on all previous work
 
-1. **Flask server scaffold** - basic routes, static serving, config loading
-2. **SQLite schema** - create tables, seed data, basic CRUD
-3. **WebSocket plumbing** - SocketIO namespaces, connection/reconnection
-4. **Asset watcher** - watchdog integration, basic file indexing
-5. **Show View shell** - blank canvas, SocketIO connection, FPS counter
-6. **Operator UI shell** - Vanilla JS app, basic layout with Web Components, SocketIO connection
+## Phase 1A: Lean Foundation
 
-**Acceptance**: Two browser windows connect to server, see FPS counter, exchange ping/pong messages.
+**Goal**: Minimal infrastructure to support real-time rendering and operator control.
 
-## Phase 1B: Video Playback (First Vertical Slice)
+### Deliverables
+1. **Flask server scaffold** - `/show` and `/operator` routes, static serving
+2. **Minimal SQLite schema** - settings table only (defer asset tables)
+3. **WebSocket plumbing** - SocketIO namespaces (`/control`, `/show`)
+4. **Show View shell** - Canvas element, FPS counter, SocketIO connection
+5. **Operator UI shell** - Connection status indicator, simple cue button
 
-1. **Video asset validation** - ffprobe codec check, thumbnail extraction
-2. **VideoScene renderer** - HTML5 `<video>` element, play/pause/seek
-3. **Timeline with 1 video** - load timeline JSON, send SHOW_PLAY event
-4. **Operator transport controls** - Play/Pause/Next buttons work
-5. **Telemetry** - Show View reports timecode back to operator
+### What's Deferred
+- Asset watcher and file system monitoring
+- Complex database schema (assets, timelines, thumbnails)
+- Asset validation and preprocessing
+- Timeline editor
 
-**Acceptance**: Load a 1-item timeline with MP4, press play, video plays, see timecode updating.
+### Acceptance Criteria
+- Two browser windows connect to server successfully
+- FPS counter displays in Show View (even if just empty canvas)
+- Operator UI sends ping, Show View responds with pong via WebSocket
+- Connection status updates in real-time (connected/disconnected)
 
-## Phase 1C: Photo Slideshow (Second Feature)
+---
 
-1. **Image preprocessing** - EXIF rotation, scale to 2200px, thumbnail
-2. **PhotoSlideshow scene** - Canvas texture loading, crossfade transitions
-3. **Ken Burns effect** - slow zoom/pan with easing
-4. **Live asset injection** - new photo appears in running slideshow
-5. **Timeline with video + photos** - transition between scene types
+## Phase 1B: Math Visuals Core (First Vertical Slice)
 
-**Acceptance**: 2-item timeline (video → photos), smooth crossfade, new photo hot-added during playback.
+**Goal**: First math preset rendering at 60fps with live parameter control.
 
-## Phase 1D: Timeline Editor (Operator UX)
+### Deliverables
+1. **Rendering engine choice** - PixiJS or pure Canvas 2D API (recommend Canvas 2D for simplicity)
+2. **Lissajous curves preset** - Parametric curve rendering (a, b, delta parameters)
+3. **Scene lifecycle** - Start, render loop, stop, cleanup
+4. **Operator UI controls** - "Start Lissajous" button, parameter sliders (a, b, delta, speed)
+5. **WebSocket events** - `SHOW_START_SCENE`, `SHOW_UPDATE_PARAMS`, `SHOW_STOP_SCENE`
+6. **Performance monitoring** - FPS calculation, display in operator UI
+7. **Error handling** - Canvas initialization failures, graceful degradation
 
-1. **Asset bins UI** - display thumbnails from DB, drag-and-drop
-2. **Timeline track** - visual cards for each item, reorder, delete
-3. **Inspector panel** - edit scene params (duration, transitions)
-4. **Save/load timeline** - persist to DB, validation warnings
-5. **Hotkeys** - Space, ←/→, basic transport
+### Testing
+- Unit test: Lissajous parameter validation
+- Integration test: WebSocket event flow
+- Manual test: FPS sustains 60fps for 60 seconds
 
-**Acceptance**: Build a 5-item timeline from UI, save, reload, playback matches edited sequence.
+### Acceptance Criteria
+- Lissajous curves render smoothly at 60fps
+- Parameter sliders update visualization in real-time
+- No memory leaks during 5-minute continuous run
+- FPS reported to operator UI every second
 
-## Phase 1E: Text Cards (Simple Scene)
+---
 
-1. **TextCards renderer** - Canvas text rendering with theme fonts
-2. **Animation presets** - slide/fade/zoom enter/exit
-3. **Timeline integration** - add text card items via operator UI
-4. **Quick cue** - "Show Text" live cue with input field
+## Phase 1C: Math Visuals Library (Expand Preset Collection)
 
-**Acceptance**: Insert text card between video/photos, animate in/out, trigger ad-hoc text via cue.
+**Goal**: Multiple math presets with smooth switching and consistent performance.
 
-## Phase 1F: Countdown (Signature Feature)
+### Deliverables
+1. **Preset architecture** - Base class/interface for math scenes
+2. **Additional presets** (grouped by complexity):
+   - **Simple**: Polar Roses, Spirograph/Epicycles
+   - **Medium**: Digits Rain (π/e/primes), Ulam Prime Spiral
+   - **Complex**: Conway's Game of Life, Mandelbrot/Julia Set
+3. **Preset selector UI** - Dropdown or grid of preset thumbnails
+4. **Scene switching** - Transition between presets (crossfade or cut)
+5. **Duration control** - Auto-advance after N seconds
+6. **Theme colors** - Apply Neon Chalkboard palette to all presets
+7. **Performance guardrails** - Reduce complexity if FPS < 55
 
-1. **Countdown scene** - large numerals, theme styling
-2. **Timing precision** - exactly 1 second per number
-3. **Sound effects** - tick sound, air horn at zero
-4. **Confetti trigger** - particle system fires at 0
-5. **Live cue button** - countdown 10/5/3 from any moment
+### Testing
+- Unit test: Each preset parameter validation
+- Performance test: Each preset sustains 55+ fps
+- Integration test: Switching between presets without frame drops
 
-**Acceptance**: Countdown runs 10→0 in exactly 10s, confetti fires, operator can trigger mid-show.
+### Acceptance Criteria
+- All 6-7 presets available and working
+- Each preset sustains minimum 55 fps
+- Switching between presets completes in < 500ms
+- Theme colors consistent across all presets
+- Operator can trigger any preset on-demand
 
-## Phase 1G: Math Visuals (3 Core Presets)
+---
 
-1. **GPU rendering base** - PixiJS setup, shader pipeline
-2. **Lissajous Lab** - first preset, parameterized
-3. **Polar Roses** - second preset
-4. **Digits Rain (π)** - third preset
-5. **Performance monitoring** - FPS backoff if < 55fps
+## Phase 1D: Music Playback (Audio Layer)
 
-**Acceptance**: Timeline with all 3 math presets, each sustains 60fps, parameters adjustable.
+**Goal**: Background music plays independently of visuals with operator control.
 
-## Phase 1H: Music Playback (Audio Layer)
+### Deliverables
+1. **Web Audio API integration** - AudioContext, buffer loading, playback
+2. **Music library** - Scan `/assets/music/` folder, list MP3 files
+3. **Playback controls** - Play, pause, stop, loop
+4. **Volume control** - Master volume slider (0-100%)
+5. **Audio meters** - Visual feedback (peak levels, waveform optional)
+6. **Track selection** - Dropdown or list in operator UI
+7. **Crossfade** - Smooth transition between tracks (3-5 second fade)
+8. **Error handling** - File not found, decode failures, autoplay policy
 
-1. **Web Audio API** - load/decode MP3, play/pause/volume
-2. **Background music track** - plays independently of scenes
-3. **Volume control** - operator master volume slider
-4. **Audio meters** - visual feedback in operator UI
-5. **Crossfade** - smooth transition between music tracks
+### Testing
+- Unit test: Audio buffer loading and decoding
+- Integration test: Volume control accuracy
+- Manual test: Music plays for 10+ minutes without glitches
 
-**Acceptance**: Music plays under photo slideshow, volume adjustable live, smooth track changes.
+### Acceptance Criteria
+- Music plays under math visuals without affecting FPS
+- Volume adjustable live (0-100%)
+- Crossfade between tracks smooth and seamless
+- Audio meters display accurate levels
+- Show View reconnection resumes music from correct position
 
-## Phase 1I: Themes and Polish
+---
 
-1. **Neon Chalkboard theme** - apply palette to all scenes
-2. **Transition system** - fade/cross/cut with proper timing
-3. **Preloading** - next scene textures load during current scene
-4. **Error UI** - toasts for missing files, warnings panel
-5. **Preview window** - mini show view in operator UI
+## Phase 1E: Text Cards (Simple Scene Type)
 
-**Acceptance**: Theme colors consistent, transitions smooth < 300ms, error handling graceful.
+**Goal**: Display text overlays with animations on top of visuals.
 
-## Phase 1J: Remaining Math Visuals (Complete Set)
+### Deliverables
+1. **Canvas text rendering** - Multi-line text, theme fonts (Bebas Neue, Inter)
+2. **Animation presets** - Slide in/out, fade in/out, zoom in/out
+3. **Layout options** - Center, lower-third, upper-left
+4. **Operator UI** - Text input field, animation picker, layout picker
+5. **Live cue** - "Show Text" button for ad-hoc messages
+6. **Timing control** - Duration slider or auto-dismiss
+7. **Text formatting** - Line breaks, basic styling (bold optional)
 
-1. **Ulam Prime Spiral**
-2. **Conway's Game of Life**
-3. **Platonic Solids** (WebGL)
-4. **Voronoi Flow**
-5. **Vector Field Swirls**
-6. **Mandelbrot/Julia**
-7. **Spirograph/Epicycles**
+### Testing
+- Unit test: Text layout calculations
+- Integration test: Animation timing accuracy
+- Visual test: Text readable on various backgrounds
 
-**Acceptance**: All 10 math presets available, configurable, performant.
+### Acceptance Criteria
+- Text card appears over math visual without stopping rendering
+- Animations smooth (fade/slide complete in specified duration)
+- Text stays on screen for configured duration
+- Live cue works instantly (< 200ms latency)
+- Text clears properly without artifacts
 
-## Phase 1K: Integration Testing & Production Readiness
+---
 
-1. **Build 20-minute test timeline** - all scene types, realistic show flow
-2. **Dual-screen setup** - kiosk mode script, runbook validation
-3. **Pytest suite** - asset validation, state machine, API endpoints
-4. **Performance benchmarks** - sustained 60fps for full timeline
-5. **Packaging script** - requirements.txt, build commands, launcher
+## Phase 1F: Photo Slideshow (Asset Pipeline Introduction)
 
-**Acceptance**: Full timeline runs for 20+ minutes without errors, all acceptance tests pass.
+**Goal**: Display photos with Ken Burns effect and basic asset management.
 
-## Phase 2 — Live Polish (Future)
+### Deliverables
+1. **Image loading** - Canvas drawImage, handle EXIF rotation
+2. **Ken Burns effect** - Slow zoom and pan with easing
+3. **Crossfade transitions** - Blend between photos smoothly
+4. **Basic asset indexing** - Scan `/assets/photos/`, list files
+5. **Photo bin UI** - Thumbnail grid in operator UI
+6. **Asset metadata** - Store file paths, dimensions in memory (no DB yet)
+7. **Drag-and-drop** - Add photos to active slideshow
+8. **Error handling** - Missing files, corrupted images, unsupported formats
 
-- Beat-aware swaps (offline BPM grid)
-- Sponsor ticker; school roll-call
-- Confetti particles with physics and stingers
-- Stream Deck / hotkeys mapping UI
+### What's Still Deferred
+- Asset watcher (file system monitoring)
+- Image preprocessing and scaling
+- Thumbnail generation
+- Database persistence of assets
 
-## Phase 3 — Deluxe (Future)
+### Testing
+- Unit test: Image load error handling
+- Integration test: Ken Burns timing and smoothness
+- Manual test: 50+ photos cycle without memory issues
 
-- External scoreboard (Google Sheet); winner reveal cards
-- Face-blur and NSFW guard; NDI/OBS; DMX/Art-Net bridge
-- Highlight auto-export; analytics (photos shown, FPS histograms)
+### Acceptance Criteria
+- Photos display with smooth Ken Burns effect
+- Crossfade between photos seamless (< 1 second)
+- New photo added via UI appears in slideshow within 5 seconds
+- No memory leaks over 100+ photo cycle
+- Operator can see photo thumbnails and select
+
+---
+
+## Phase 1G: Video Playback (Complex Media Integration)
+
+**Goal**: Play MP4 videos with proper sync and transitions.
+
+### Deliverables
+1. **HTML5 video element** - Position off-screen or overlay on canvas
+2. **Video validation** - Check codec (H.264/AAC only via ffprobe or browser)
+3. **Playback controls** - Play, pause, seek
+4. **Video/scene transitions** - Fade in/out, crossfade to other scenes
+5. **Video library UI** - List videos from `/assets/videos/`
+6. **Sync with timeline** - Video duration drives scene duration
+7. **End behavior** - Hold last frame, loop, or advance to next scene
+8. **Error handling** - Codec unsupported, file not found, playback stalled
+
+### Testing
+- Unit test: Video validation logic
+- Integration test: Video start/stop via WebSocket
+- Manual test: Video plays without audio/video desync
+
+### Acceptance Criteria
+- MP4 H.264 video plays smoothly
+- Video transitions to/from other scenes cleanly
+- Audio in video plays in sync with visuals
+- Operator can see video thumbnails (first frame)
+- Video ends gracefully (hold or advance as configured)
+
+---
+
+## Phase 1H: Countdown & Polish (Signature Feature)
+
+**Goal**: Countdown feature and overall theme consistency.
+
+### Deliverables
+1. **Countdown scene** - Large numerals counting down (10→0 or custom start)
+2. **Timing precision** - Each number displays for exactly 1 second
+3. **Sound effects** - Tick sound each second, air horn at zero (optional)
+4. **Confetti trigger** - Particle system fires at 0
+5. **Live cue button** - Countdown 10/5/3 from operator UI
+6. **Theme system** - Load Neon Chalkboard theme JSON, apply colors globally
+7. **Transition refinements** - Ensure all scenes transition smoothly
+8. **Error UI polish** - Toast notifications for errors, connection status
+
+### Testing
+- Unit test: Countdown timing accuracy
+- Integration test: Confetti triggers correctly
+- Manual test: Theme applied consistently across all scenes
+
+### Acceptance Criteria
+- Countdown runs 10→0 in exactly 10.0 seconds
+- Confetti fires at zero with visual impact
+- Operator can trigger countdown mid-show instantly
+- Theme colors consistent across math, text, photos, video
+- All transitions feel polished (< 300ms, smooth)
+
+---
+
+## Phase 1I: Timeline & Integration Testing
+
+**Goal**: Build, save, and replay complex multi-scene timelines.
+
+### Deliverables
+1. **Timeline editor UI** - Visual track with scene cards
+2. **Timeline data structure** - JSON format with scene sequence
+3. **Save/load timelines** - Persist to SQLite database
+4. **Timeline playback** - Auto-advance through scenes
+5. **Transport controls** - Play, pause, next, previous, jump
+6. **Inspector panel** - Edit scene parameters (duration, transitions)
+7. **Validation** - Warn on missing assets, invalid parameters
+8. **20-minute test timeline** - All scene types, realistic show flow
+9. **Full test suite** - Pytest unit + integration + E2E tests
+10. **Performance benchmarks** - Sustained 60fps for full timeline
+
+### Testing
+- E2E test: Build 5-item timeline, save, reload, playback
+- Performance test: 20-minute timeline without FPS drops
+- Integration test: All WebSocket events in timeline flow
+
+### Acceptance Criteria
+- Build timeline with 10+ items via UI
+- Save and reload timeline preserves all settings
+- Playback advances through scenes automatically
+- Timeline runs for 20+ minutes without errors
+- All pytest tests pass with 80%+ coverage
+- Production ready for first event deployment
+
+---
+
+## Phase 2 — Live Enhancements (Future)
+
+- Beat-aware visual swaps (BPM grid analysis)
+- Sponsor ticker and school roll-call animations
+- Advanced confetti with physics
+- Stream Deck integration and hotkey mapping UI
+- Asset watcher and hot-reload
+
+---
+
+## Phase 3 — Advanced Features (Future)
+
+- External scoreboard integration (Google Sheets)
+- Face blur and content moderation
+- NDI output for OBS/vMix
+- DMX/Art-Net lighting bridge
+- Highlight auto-export and analytics
+- Multi-operator collaboration
+
+---
+
+## Notes on Vertical Slices
+
+Each phase delivers:
+- **Core functionality** working end-to-end
+- **Operator UI** to control the feature
+- **Error handling** and validation
+- **Tests** (unit + integration at minimum)
+- **Documentation** updates as we go
+
+This approach allows for:
+- Early demo-ability (show progress after each phase)
+- Risk mitigation (prove hardest parts early)
+- Flexibility (reprioritize phases based on feedback)
+- Incremental complexity (build on solid foundation)

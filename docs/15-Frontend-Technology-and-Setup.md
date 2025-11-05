@@ -7,38 +7,76 @@ PrimeTime uses vanilla JavaScript with Web Components for the Operator UI and Ca
 
 ### Show View (Projector Display)
 
-**Core Technologies:**
-- **PixiJS v7** - WebGL rendering for math visuals and effects
-- **Native HTML5 `<video>`** - Video playback (better performance than Canvas video)
-- **Canvas 2D API** - Text rendering, photo slideshow, Ken Burns
-- **Web Audio API** - Music playback, volume control, audio meters
+**Core Technologies (Build Order):**
+
+**Phase 1B-1C: Math Visuals Foundation**
+- **Canvas 2D API** - Primary renderer for math visuals (start here, simplest)
+- **PixiJS v7** (optional) - WebGL renderer if Canvas 2D performance insufficient for complex presets
 - **Vanilla JavaScript (ES2020+)** - No frameworks, direct DOM/Canvas access
 
-**Why PixiJS:**
-- Mature WebGL abstraction, excellent performance
+**Phase 1D: Audio Layer**
+- **Web Audio API** - Music playback, volume control, audio meters
+
+**Phase 1E: Text Rendering**
+- **Canvas 2D API** - Text cards with animations (already loaded)
+
+**Phase 1F: Image Rendering**
+- **Canvas 2D API** - Photo slideshow, Ken Burns effects (already loaded)
+
+**Phase 1G: Video Integration**
+- **Native HTML5 `<video>`** - Video playback (better performance than Canvas video)
+
+**Why Start with Canvas 2D API:**
+- No external dependencies, built into browser
+- Sufficient performance for most math visuals
+- Simpler API than WebGL
+- Faster to prototype and iterate
+- Can always upgrade to PixiJS/WebGL for specific presets if needed
+
+**Why PixiJS (if needed for Phase 1C):**
+- Mature WebGL abstraction, excellent performance for complex visuals
 - Built-in sprite batching, texture caching
-- Shader support for custom math visuals
+- Shader support for custom math visuals (Mandelbrot, Platonic Solids)
 - Active maintenance, good documentation
 
-**File Structure:**
+**File Structure (Build Incrementally):**
 ```
 static/
   show/
     index.html          # Fullscreen Show View page
     show.js             # Main Show View controller
     scenes/
-      VideoScene.js     # Video playback scene
-      PhotoSlideshow.js # Photo slideshow scene
-      TextCards.js      # Text card scene
-      Countdown.js      # Countdown scene
+      # Phase 1B: Start here
       MathVisuals.js    # Base class for math presets
-      presets/
-        Lissajous.js    # Individual preset implementations
-        PolarRoses.js
-        ...
+      Lissajous.js      # First preset (Phase 1B)
+      
+      # Phase 1C: Add more math presets
+      PolarRoses.js
+      Spirograph.js
+      DigitsRain.js
+      UlamSpiral.js
+      ConwayLife.js
+      Mandelbrot.js
+      # ... more presets
+      
+      # Phase 1E: Text rendering
+      TextCards.js      # Text card scene
+      
+      # Phase 1F: Image rendering
+      PhotoSlideshow.js # Photo slideshow scene
+      
+      # Phase 1G: Video playback
+      VideoScene.js     # Video playback scene
+      
+      # Phase 1H: Polish
+      Countdown.js      # Countdown scene
+      
     utils/
-      transitions.js    # Fade/cross/cut transition functions
+      # Phase 1D: Audio
       audio.js          # Web Audio API wrapper
+      
+      # Phase 1H: Transitions
+      transitions.js    # Fade/cross/cut transition functions
 ```
 
 ### Operator UI (Control Interface)
@@ -312,19 +350,35 @@ export class AudioPlayer {
 
 ## Performance Considerations
 
-### Show View Optimization
+### Show View Optimization (By Phase)
 
-1. **RequestAnimationFrame**: Use single RAF loop for all rendering
-2. **Texture Caching**: PixiJS handles this, but manually cache photo textures
-3. **Video Elements**: Reuse `<video>` elements, don't create new ones per scene
-4. **Garbage Collection**: Minimize object creation in render loop
-5. **OffscreenCanvas**: Consider for complex math visuals (future optimization)
+**Phase 1B-1C (Math Visuals):**
+1. **RequestAnimationFrame**: Use single RAF loop for all rendering (critical from day 1)
+2. **Object Pooling**: Reuse arrays/objects in render loop, avoid allocations
+3. **Canvas Optimization**: Use `clearRect()` only on changed regions if possible
+4. **FPS Monitoring**: Track frame times, warn if < 55fps
+
+**Phase 1D (Audio):**
+1. **Audio Buffer Caching**: Decode audio files once, reuse buffers
+2. **No Rendering in Audio Callbacks**: Keep audio thread separate
+
+**Phase 1F (Photos):**
+1. **Image Caching**: Cache decoded Image objects, don't reload
+2. **Lazy Decoding**: Only decode next 2-3 images
+
+**Phase 1G (Video):**
+1. **Video Element Reuse**: Reuse `<video>` elements, don't create new ones per scene
+2. **First Frame Ready**: Wait for `canplay` event before displaying
+
+**Phase 1I (Timeline):**
+1. **Preload Next Scene**: Start loading when current scene 75% complete
+2. **Memory Management**: Release resources when scenes no longer needed
 
 ### Operator UI Optimization
 
-1. **Virtual Scrolling**: For large asset lists (100+ items), only render visible thumbnails
-2. **Debounce**: Throttle timeline updates while dragging
-3. **Lazy Loading**: Load asset thumbnails on scroll
+1. **Debounce**: Throttle WebSocket sends while dragging sliders (100ms)
+2. **Virtual Scrolling** (Phase 1F+): For large asset lists (100+ items), only render visible thumbnails
+3. **Lazy Loading** (Phase 1F+): Load asset thumbnails on scroll
 
 ## Browser Compatibility
 
@@ -337,6 +391,34 @@ export class AudioPlayer {
 **Operator UI**: Any modern browser acceptable
 
 ## Development Workflow
+
+### Phase-by-Phase Development
+
+**Phase 1A (Foundation Setup):**
+1. Create minimal Flask server with `/show` and `/operator` routes
+2. Set up SocketIO namespaces
+3. Create basic HTML pages with canvas elements
+4. Verify WebSocket connection (ping/pong test)
+
+**Phase 1B (First Math Visual):**
+1. Implement `MathVisuals.js` base class with `init()`, `render()`, `cleanup()`
+2. Implement `Lissajous.js` preset extending base class
+3. Add operator UI button to trigger Lissajous
+4. Test FPS counter updates every second
+
+**Phase 1C (More Visuals):**
+1. Add 3-4 more preset files (PolarRoses, Spirograph, etc.)
+2. Add preset selector UI component
+3. Test switching between presets smoothly
+
+**Phase 1D (Music):**
+1. Add `audio.js` utility with Web Audio API
+2. Add music controls in operator UI
+3. Test music plays independently of visuals
+
+**Continue this pattern for each phase...**
+
+### Daily Development Flow
 
 1. **Start Flask**: `flask run` (debug mode enabled)
 2. **Open Show View**: Navigate to `http://localhost:5000/show`, press F11 for fullscreen

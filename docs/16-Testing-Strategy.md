@@ -3,6 +3,20 @@
 ## Overview
 PrimeTime uses pytest for backend testing, with unit tests for core logic, integration tests for API/WebSocket flows, and Playwright for end-to-end Operator UI workflows.
 
+**Incremental Testing Approach:**
+- Build tests alongside each phase
+- Focus on what matters for current phase (don't test features not yet built)
+- Performance tests for math visuals are critical early on
+- Asset validation and timeline tests come later
+
+**Testing Priority by Phase:**
+1. **Phase 1B-1C**: Math visual rendering, FPS performance, parameter validation
+2. **Phase 1D**: Audio playback, volume control
+3. **Phase 1E**: Text rendering, animations
+4. **Phase 1F**: Image loading, Ken Burns, slideshow
+5. **Phase 1G**: Video validation, playback, sync
+6. **Phase 1I**: Timeline editing, playback state machine, full integration
+
 ## Test Structure
 
 ```
@@ -29,13 +43,63 @@ tests/
 
 ## Unit Tests (pytest)
 
-### Asset Validation Tests
+### Math Visual Parameter Validation Tests (Phase 1B-1C)
+
+**File**: `tests/unit/test_math_visuals.py`
+
+```python
+import pytest
+from primetime.scenes import validate_lissajous_params, validate_polar_roses_params
+
+def test_validate_lissajous_params_valid():
+    """Valid Lissajous parameters should pass"""
+    params = {'a': 3, 'b': 2, 'delta': 1.57, 'speed': 1.0}
+    result = validate_lissajous_params(params)
+    assert result['valid'] is True
+
+def test_validate_lissajous_params_out_of_range():
+    """Speed out of range should fail"""
+    params = {'a': 3, 'b': 2, 'delta': 1.57, 'speed': 10.0}
+    result = validate_lissajous_params(params)
+    assert result['valid'] is False
+    assert 'speed' in result['errors']
+
+def test_validate_lissajous_defaults():
+    """Missing parameters should use defaults"""
+    params = {'a': 3, 'b': 2}
+    result = validate_lissajous_params(params)
+    assert result['valid'] is True
+    assert result['params']['delta'] == 1.57  # default
+    assert result['params']['speed'] == 1.0   # default
+
+def test_validate_polar_roses_k_integer():
+    """K parameter should produce best results as integer"""
+    params = {'k': 3.5}
+    result = validate_polar_roses_params(params)
+    assert result['valid'] is True
+    assert 'k_non_integer' in result['warnings']  # Warning, not error
+```
+
+**Coverage Goals (Phase 1B-1C):**
+- Parameter validation for each math preset
+- Default value handling
+- Range checking (speed, density, etc.)
+- Warning vs error distinction
+
+### Asset Validation Tests (Phase 1F-1G)
 
 **File**: `tests/unit/test_asset_validator.py`
+
+**Note**: Defer these tests until Phase 1F+ when asset pipeline is introduced.
 
 ```python
 import pytest
 from primetime.asset_validator import validate_video, validate_image, validate_audio
+
+def test_validate_image_valid_jpeg():
+    """Valid JPEG should pass"""
+    result = validate_image('fixtures/sample_photo.jpg')
+    assert result['valid'] is True
 
 def test_validate_video_valid_h264():
     """Valid H.264 video should pass validation"""
@@ -48,34 +112,18 @@ def test_validate_video_invalid_codec():
     result = validate_video('fixtures/invalid_vp9.mp4')
     assert result['valid'] is False
     assert result['error_code'] == 'INVALID_CODEC'
-
-def test_validate_video_too_large():
-    """Video > 500MB should fail"""
-    # Mock large file
-    result = validate_video('fixtures/huge_video.mp4')
-    assert result['valid'] is False
-    assert result['error_code'] == 'FILE_TOO_LARGE'
-
-def test_validate_image_valid_jpeg():
-    """Valid JPEG should pass"""
-    result = validate_image('fixtures/sample_photo.jpg')
-    assert result['valid'] is True
-
-def test_validate_image_exceeds_max_dimensions():
-    """Image > 6000px should warn but accept"""
-    result = validate_image('fixtures/huge_image.jpg')
-    assert result['valid'] is True
-    assert 'DIMENSIONS_TOO_LARGE' in result['warnings']
 ```
 
-**Coverage Goals:**
+**Coverage Goals (Phase 1F-1G):**
 - All validation error codes tested
 - Edge cases: corrupted files, missing files, unsupported formats
 - Warning vs error distinction
 
-### Timeline Parser Tests
+### Timeline Parser Tests (Phase 1I)
 
 **File**: `tests/unit/test_timeline_parser.py`
+
+**Note**: Defer timeline tests until Phase 1I when timeline editor is introduced.
 
 ```python
 from primetime.timeline import parse_timeline, validate_timeline
@@ -86,7 +134,7 @@ def test_parse_valid_timeline():
         "name": "Test",
         "theme": "neon-chalkboard",
         "items": [
-            {"id": "v1", "sceneType": "VideoScene", "params": {"src": "test.mp4"}}
+            {"id": "m1", "sceneType": "MathVisuals", "params": {"preset": "lissajous"}}
         ]
     }
     timeline = parse_timeline(timeline_json)
@@ -107,21 +155,34 @@ def test_validate_timeline_invalid_scene_type():
     }
     result = validate_timeline(timeline_json)
     assert result['valid'] is False
-
-def test_validate_timeline_missing_asset():
-    """Timeline referencing non-existent asset should warn"""
-    timeline_json = {
-        "items": [{"sceneType": "VideoScene", "params": {"src": "/nonexistent.mp4"}}]
-    }
-    result = validate_timeline(timeline_json, asset_db=mock_db)
-    assert result['valid'] is True  # Warnings don't block
-    assert len(result['warnings']) > 0
 ```
 
-### State Machine Tests
+### State Machine Tests (Phase 1I)
 
 **File**: `tests/unit/test_state_machine.py`
 
+**Note**: Defer full state machine tests until Phase 1I. For Phase 1B-1C, test simple IDLE/RENDERING transitions only.
+
+**Phase 1B-1C (Simplified State Machine):**
+```python
+from primetime.playback import SimpleStateMachine
+
+def test_idle_to_rendering():
+    """Starting scene should transition IDLE → RENDERING"""
+    sm = SimpleStateMachine()
+    assert sm.state == 'IDLE'
+    sm.start_scene('Lissajous', {'a': 3, 'b': 2})
+    assert sm.state == 'RENDERING'
+
+def test_rendering_to_idle():
+    """Stopping scene should transition RENDERING → IDLE"""
+    sm = SimpleStateMachine()
+    sm.state = 'RENDERING'
+    sm.stop_scene()
+    assert sm.state == 'IDLE'
+```
+
+**Phase 1I (Full State Machine):**
 ```python
 from primetime.playback import PlaybackStateMachine
 
@@ -139,30 +200,6 @@ def test_loading_to_playing_transition():
     sm.assets_ready()
     sm.play()
     assert sm.state == 'PLAYING'
-
-def test_playing_to_paused_transition():
-    """Pause during playback should transition PLAYING → PAUSED"""
-    sm = PlaybackStateMachine()
-    sm.state = 'PLAYING'
-    sm.pause()
-    assert sm.state == 'PAUSED'
-
-def test_invalid_transition_raises_error():
-    """Invalid state transition should raise error"""
-    sm = PlaybackStateMachine()
-    sm.state = 'IDLE'
-    with pytest.raises(InvalidTransitionError):
-        sm.pause()  # Can't pause when IDLE
-
-def test_error_state_auto_recovery():
-    """ERROR state should auto-transition to LOADING (next scene)"""
-    sm = PlaybackStateMachine()
-    sm.state = 'PLAYING'
-    sm.handle_error('SCENE_LOAD_FAILED')
-    assert sm.state == 'ERROR'
-    # After timeout, should skip to next
-    sm.skip_to_next()
-    assert sm.state == 'LOADING'
 ```
 
 ### Database Tests
@@ -435,35 +472,81 @@ def test_scene_transition(show_page: Page):
     # Assert next scene is visible
 ```
 
-## Performance Tests
+## Performance Tests (Critical for Phase 1B-1C)
 
 ### FPS Benchmark Tests
 
 **File**: `tests/performance/test_fps.py`
 
+**Priority**: HIGH - These tests are critical from Phase 1B onwards.
+
 ```python
-def test_math_visual_sustains_60fps():
-    """Math visual preset should maintain 60 fps"""
-    scene = create_math_scene('lissajous')
+import time
+import pytest
+
+def test_lissajous_sustains_60fps():
+    """Lissajous preset should maintain 60 fps (Phase 1B acceptance criteria)"""
+    scene = create_math_scene('lissajous', {'a': 3, 'b': 2, 'delta': 1.57})
     fps_samples = []
     
     for _ in range(300):  # 5 seconds at 60fps
         start = time.time()
         scene.render()
         frame_time = (time.time() - start) * 1000
-        fps = 1000 / frame_time
+        fps = 1000 / frame_time if frame_time > 0 else 60
         fps_samples.append(fps)
     
     avg_fps = sum(fps_samples) / len(fps_samples)
-    assert avg_fps >= 55  # Allow small variance
-    assert min(fps_samples) >= 50  # No severe drops
+    assert avg_fps >= 55, f"Average FPS {avg_fps} below threshold"
+    assert min(fps_samples) >= 50, f"Min FPS {min(fps_samples)} too low"
 
-def test_scene_transition_latency():
-    """Scene transition should complete in < 300ms"""
+def test_polar_roses_sustains_60fps():
+    """Polar Roses preset should maintain 60 fps (Phase 1C)"""
+    scene = create_math_scene('polar_roses', {'k': 3})
+    fps_samples = measure_fps(scene, duration_seconds=5)
+    assert average(fps_samples) >= 55
+
+def test_all_math_presets_performance():
+    """All math presets should meet performance requirements (Phase 1C)"""
+    presets = ['lissajous', 'polar_roses', 'spirograph', 'digits_rain', 'ulam_spiral']
+    
+    for preset_name in presets:
+        scene = create_math_scene(preset_name)
+        fps_samples = measure_fps(scene, duration_seconds=3)
+        avg_fps = average(fps_samples)
+        assert avg_fps >= 55, f"{preset_name} failed: {avg_fps} fps"
+
+def test_scene_switching_latency():
+    """Switching between presets should be fast (Phase 1C)"""
+    scene1 = create_math_scene('lissajous')
+    scene1.cleanup()
+    
     start = time.time()
-    transition_to_next_scene()
+    scene2 = create_math_scene('polar_roses')
+    scene2.init()
     latency = (time.time() - start) * 1000
-    assert latency < 300
+    
+    assert latency < 500, f"Scene switch took {latency}ms, expected < 500ms"
+```
+
+**Helper Functions:**
+```python
+def measure_fps(scene, duration_seconds=5):
+    """Measure FPS for a scene over given duration"""
+    fps_samples = []
+    frames = int(duration_seconds * 60)
+    
+    for _ in range(frames):
+        start = time.time()
+        scene.render()
+        frame_time = (time.time() - start) * 1000
+        fps = 1000 / frame_time if frame_time > 0 else 60
+        fps_samples.append(fps)
+    
+    return fps_samples
+
+def average(samples):
+    return sum(samples) / len(samples) if samples else 0
 ```
 
 ## Test Data
@@ -516,12 +599,34 @@ pytest --cov=primetime --cov-report=html
 pytest-watch
 ```
 
-## Test Coverage Goals
+## Test Coverage Goals (By Phase)
 
+### Phase 1B-1C (Math Visuals)
+- **Unit tests**: Parameter validation for each preset
+- **Performance tests**: FPS benchmarks for all presets (60+ fps target)
+- **Integration tests**: WebSocket events (start/stop scene, update params)
+- **Manual tests**: Visual quality, smooth rendering
+
+### Phase 1D (Music)
+- **Unit tests**: Audio buffer loading, volume control
+- **Integration tests**: Music playback WebSocket events
+- **Manual tests**: No audio/rendering interference
+
+### Phase 1E-1F (Text, Photos)
+- **Unit tests**: Text layout, image loading
+- **Integration tests**: Scene rendering, animations
+- **Manual tests**: Visual quality, transitions
+
+### Phase 1G (Video)
+- **Unit tests**: Video validation (codec checks)
+- **Integration tests**: Video playback, sync
+- **Manual tests**: No audio/video desync
+
+### Phase 1I (Timeline & Integration)
 - **Unit tests**: 80%+ coverage of core logic (validation, parsing, state machine)
 - **Integration tests**: All API endpoints and WebSocket events
 - **E2E tests**: Critical operator workflows (build timeline, playback, cues)
-- **Performance tests**: FPS benchmarks for all math visual presets
+- **Performance tests**: Sustained 60fps for full 20-minute timeline
 
 ## Continuous Integration
 

@@ -22,8 +22,9 @@
 - `16-Testing-Strategy.md`
 
 ## TL;DR
-- **Renderer:** Fullscreen browser Show View (PixiJS WebGL + HTML5 `<video>`/WebAudio).
-- **Backend:** Flask + Flask-SocketIO; SQLite database; watches assets; persists timeline/settings.
-- **Operator UI:** Vanilla JS + Web Components; timeline editor, scene params, and live cues.
-- **Media:** MP4 H.264/AAC (video), MP3/M4A (audio), JPG/PNG (images), 1080p target.
-- **Signature:** Neon Chalkboard theme; math visual presets; 10→0 countdown macro.
+- **Renderer:** Fullscreen browser Show View (Canvas 2D for math visuals, then WebAudio, then HTML5 `<video>`).
+- **Backend:** Flask + Flask-SocketIO; minimal SQLite initially; build incrementally.
+- **Operator UI:** Vanilla JS + Web Components; live cues, scene controls, parameter adjustments.
+- **Build Order:** Math visuals first → music → text → photos → video → timeline.
+- **Signature:** Neon Chalkboard theme; parametric math presets; 10→0 countdown macro.
+- **Philosophy:** Rendering-first approach; prove core visuals work before adding asset complexity.

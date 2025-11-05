@@ -1,19 +1,44 @@
 # Timeline & Data Contracts
 
 ## Timeline JSON (authoritative)
+
+**Note**: Timeline structure is introduced in Phase 1I. Early phases use direct scene triggering via WebSocket events.
+
+### Full Timeline Example (Phase 1I)
 ```json
 {
   "name": "Math Relays 2025",
   "theme": "neon-chalkboard",
   "items": [
     {
-      "id": "intro-video",
-      "sceneType": "VideoScene",
-      "params": { "src": "/assets/videos/intro.mp4", "overlayTitle": "Welcome" },
-      "duration": "auto",
+      "id": "math-intro",
+      "sceneType": "MathVisuals",
+      "params": { "preset": "lissajous", "a": 3, "b": 2, "speed": 1.0 },
+      "duration": 60000,
       "transitionIn": "fade:800",
       "transitionOut": "fade:500",
-      "notes": "Open the room"
+      "notes": "Opening visual - simple Lissajous"
+    },
+    {
+      "id": "welcome-text",
+      "sceneType": "TextCards",
+      "params": { 
+        "lines": ["Welcome to", "Math Relays 2025"], 
+        "layout": "center",
+        "enter": "fade",
+        "exit": "fade"
+      },
+      "duration": 5000,
+      "transitionIn": "fade:600",
+      "transitionOut": "fade:600"
+    },
+    {
+      "id": "math-roses",
+      "sceneType": "MathVisuals",
+      "params": { "preset": "polar_roses", "k": 5, "speed": 0.8 },
+      "duration": 90000,
+      "transitionIn": "fade:600",
+      "transitionOut": "fade:300"
     },
     {
       "id": "photo-loop",
@@ -24,23 +49,47 @@
       "transitionOut": "cross:700"
     },
     {
-      "id": "math-pack",
-      "sceneType": "MathVisuals",
-      "params": { "preset": "lissajous", "speed": 1.0, "density": 0.8 },
-      "duration": 60000,
-      "transitionIn": "fade:600",
-      "transitionOut": "fade:300"
+      "id": "intro-video",
+      "sceneType": "VideoScene",
+      "params": { "src": "/assets/videos/intro.mp4", "volume": 1.0 },
+      "duration": "auto",
+      "transitionIn": "fade:800",
+      "transitionOut": "fade:500",
+      "notes": "Welcome video"
     },
     {
       "id": "awards-countdown",
       "sceneType": "Countdown",
-      "params": { "from": 10, "style": "big-flash" },
+      "params": { "from": 10, "style": "big-flash", "sound": true },
       "duration": "auto",
       "transitionIn": "cut",
       "transitionOut": "cut"
     }
   ]
 }
+```
+
+### Simple Scene Triggering (Phase 1B-1H)
+
+Before timeline implementation, scenes are triggered directly via WebSocket:
+
+```javascript
+// Operator sends to server
+socket.emit('SHOW_START_SCENE', {
+  sceneType: 'MathVisuals',
+  params: { preset: 'lissajous', a: 3, b: 2, speed: 1.0 }
+});
+
+// Server relays to Show View
+socket.emit('SHOW_START_SCENE', { /* same payload */ });
+
+// Show View responds
+socket.emit('SHOW_STATUS', {
+  sceneType: 'MathVisuals',
+  preset: 'lissajous',
+  fps: 60,
+  state: 'RENDERING'
+});
 ```
 
 ### Field Notes

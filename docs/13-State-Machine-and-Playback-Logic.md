@@ -1,9 +1,36 @@
 # State Machine & Playback Logic
 
 ## Overview
-The playback system uses a state machine to manage transitions between scenes, handle user input, and recover from errors or disconnections. The server is the source of truth for current state.
+The playback system uses a state machine to manage transitions between scenes, handle user input, and recover from errors or disconnections.
 
-## States
+**Incremental Implementation:**
+- **Phase 1A-1C (Math Visuals)**: Simple states (IDLE, RENDERING), minimal server state tracking
+- **Phase 1D-1F (Music, Text, Photos)**: Add scene switching, duration control
+- **Phase 1G+ (Video, Timeline)**: Full state machine with preloading, server-authoritative time, complex transitions
+
+This document describes the **full state machine** (Phase 1I+). Early phases use a simplified subset.
+
+## Simplified States (Phase 1B-1C: Math Visuals)
+
+For early phases, we use a minimal state machine:
+
+### `IDLE`
+- No scene active
+- Canvas displays FPS counter or standby message
+- Transitions to `RENDERING` on `SHOW_START_SCENE` event
+
+### `RENDERING`
+- Math visual actively rendering
+- FPS calculated and reported every second
+- Transitions to `IDLE` on `SHOW_STOP_SCENE` event
+
+**No preloading, no timecode tracking, no timeline in early phases.** Just start/stop scenes on demand.
+
+---
+
+## Full State Machine (Phase 1I+)
+
+The full state machine is introduced in later phases:
 
 ### `IDLE`
 Initial state, no timeline loaded or playback stopped.
@@ -74,7 +101,9 @@ BLACKOUT ← (can interrupt any state)
 ERROR → (auto-recover to LOADING next)
 ```
 
-## Clock Synchronization
+## Clock Synchronization (Phase 1I+)
+
+**Note**: Clock synchronization is not needed for early phases (1A-1F). Math visuals, music, and text don't require precise timecode sync. Introduce this complexity when implementing timeline playback.
 
 ### Problem
 Operator UI and Show View run on separate clocks. Need consistent timecode for seeking, display, and telemetry.
@@ -100,7 +129,13 @@ Operator UI and Show View run on separate clocks. Need consistent timecode for s
 - If Show View reports timecode > 100ms off from server calculation, server sends correction
 - Network lag is handled by using monotonic clock (performance.now) locally and sync messages from server
 
-## Preloading Strategy
+## Preloading Strategy (Phase 1F+)
+
+**Note**: Preloading is introduced gradually:
+- **Phase 1A-1D**: No preloading needed (math visuals and music are instant)
+- **Phase 1E**: Basic font preloading for text cards
+- **Phase 1F**: Image preloading for photo slideshow
+- **Phase 1G+**: Full preloading strategy for video and complex timelines
 
 ### When to Preload
 - **During current scene**: When current scene is > 75% complete, start loading next scene assets
@@ -110,7 +145,7 @@ Operator UI and Show View run on separate clocks. Need consistent timecode for s
 ### What to Preload
 - **VideoScene**: Video element created, `load()` called, first frame ready
 - **PhotoSlideshow**: First 3-5 images as Canvas Image objects
-- **MathVisuals**: Shader programs compiled, GPU buffers allocated
+- **MathVisuals**: Shader programs compiled, GPU buffers allocated (usually instant)
 - **TextCards**: Fonts loaded (if not already), text metrics calculated
 
 ### Preload Queue
@@ -168,7 +203,15 @@ Operator UI and Show View run on separate clocks. Need consistent timecode for s
 
 ## Implementation Notes
 
-### Server State Tracking
+### Simplified Server State (Phase 1B-1C)
+```python
+class SimpleState:
+    current_scene_type: str  # e.g., "Lissajous"
+    current_params: dict
+    state: str  # "IDLE" or "RENDERING"
+```
+
+### Full Server State Tracking (Phase 1I+)
 ```python
 class PlaybackState:
     current_timeline: dict
@@ -179,7 +222,16 @@ class PlaybackState:
     state: str  # IDLE, LOADING, PLAYING, etc.
 ```
 
-### Show View State
+### Simplified Show View State (Phase 1B-1C)
+```javascript
+class ShowViewState {
+    currentScene: Scene | null
+    state: 'IDLE' | 'RENDERING'
+    fps: number
+}
+```
+
+### Full Show View State (Phase 1I+)
 ```javascript
 class ShowViewState {
     timeline: Timeline
@@ -190,3 +242,15 @@ class ShowViewState {
     localTimecodeMs: number  // Interpolated
 }
 ```
+
+---
+
+## Progressive Complexity
+
+**Phase 1A-1C**: Direct WebSocket commands (start/stop scene)  
+**Phase 1D-1E**: Add scene switching, duration timers  
+**Phase 1F**: Add preloading for images  
+**Phase 1G**: Add video sync, complex error handling  
+**Phase 1I**: Full timeline with all states, preloading, and recovery  
+
+Start simple, prove the core rendering works, then add complexity incrementally.
