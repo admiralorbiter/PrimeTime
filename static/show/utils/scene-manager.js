@@ -27,6 +27,25 @@ export class SceneManager {
      * @param {Object} params - Scene parameters
      */
     startScene(sceneId, params = {}) {
+        // Validate inputs
+        if (!sceneId || typeof sceneId !== 'string') {
+            console.error('SceneManager: Invalid sceneId provided');
+            return false;
+        }
+        
+        // Check if canvas and context are available
+        if (!this.canvas || !this.ctx) {
+            console.error('SceneManager: Canvas or context not available');
+            const errorEvent = new CustomEvent('scene-error', {
+                detail: { 
+                    error: 'Canvas context not available',
+                    sceneId: sceneId
+                }
+            });
+            document.dispatchEvent(errorEvent);
+            return false;
+        }
+        
         // Stop current scene if any
         if (this.activeScene) {
             this.stopScene();
@@ -35,7 +54,14 @@ export class SceneManager {
         // Get scene class
         const SceneClass = this.sceneRegistry.get(sceneId);
         if (!SceneClass) {
-            console.error(`Scene "${sceneId}" not found in registry`);
+            console.error(`SceneManager: Scene "${sceneId}" not found in registry`);
+            const errorEvent = new CustomEvent('scene-error', {
+                detail: { 
+                    error: `Scene "${sceneId}" not found`,
+                    sceneId: sceneId
+                }
+            });
+            document.dispatchEvent(errorEvent);
             return false;
         }
         
@@ -55,11 +81,28 @@ export class SceneManager {
                 isActive: this.activeScene.isActive,
                 params: this.activeScene.params
             });
+            
+            // Emit success event
+            const successEvent = new CustomEvent('scene-started', {
+                detail: { sceneId: sceneId }
+            });
+            document.dispatchEvent(successEvent);
+            
             return true;
         } catch (error) {
-            console.error(`Error starting scene "${sceneId}":`, error);
+            console.error(`SceneManager: Error starting scene "${sceneId}":`, error);
             console.error('Error stack:', error.stack);
             this.activeScene = null;
+            
+            // Emit error event
+            const errorEvent = new CustomEvent('scene-error', {
+                detail: { 
+                    error: error.message || 'Unknown error starting scene',
+                    sceneId: sceneId,
+                    stack: error.stack
+                }
+            });
+            document.dispatchEvent(errorEvent);
             return false;
         }
     }

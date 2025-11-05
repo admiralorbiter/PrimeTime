@@ -51,12 +51,18 @@ class SceneControls extends HTMLElement {
                 </div>
                 
                 <div class="scene-buttons">
-                    <button id="start-lissajous-btn" class="btn btn-success">Start Lissajous</button>
+                    <button id="start-lissajous-btn" class="btn btn-success">
+                        <span class="btn-text">Start Lissajous</span>
+                        <span class="btn-loading" style="display: none;">Starting...</span>
+                    </button>
                     <button id="stop-scene-btn" class="btn btn-danger" disabled>Stop Scene</button>
                 </div>
                 
                 <div class="parameters-panel" id="parameters-panel" style="display: none;">
                     <h3>Parameters</h3>
+                    <div class="params-updating-indicator" id="params-updating" style="display: none;">
+                        <span class="updating-text">Updating...</span>
+                    </div>
                     
                     <div class="param-control">
                         <label for="param-a">A (Frequency X):</label>
@@ -83,6 +89,7 @@ class SceneControls extends HTMLElement {
                     </div>
                 </div>
             </div>
+            <div id="toast-container" class="toast-container"></div>
         `;
     }
     
@@ -131,9 +138,19 @@ class SceneControls extends HTMLElement {
         
         if (!this.socket || !this.socket.connected) {
             console.error('Socket not connected');
-            alert('WebSocket not connected. Please wait for connection.');
+            this.showToast('WebSocket not connected. Please wait for connection.', 'error');
             return;
         }
+        
+        // Show loading state
+        const startBtn = this.querySelector('#start-lissajous-btn');
+        const btnText = startBtn.querySelector('.btn-text');
+        const btnLoading = startBtn.querySelector('.btn-loading');
+        if (btnText && btnLoading) {
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+        }
+        startBtn.disabled = true;
         
         // Get initial parameter values
         const params = this.getCurrentParams();
@@ -144,21 +161,32 @@ class SceneControls extends HTMLElement {
             params: params
         });
         
-        // Update UI
-        this.isSceneActive = true;
-        this.querySelector('#start-lissajous-btn').disabled = true;
-        this.querySelector('#stop-scene-btn').disabled = false;
-        this.querySelector('#parameters-panel').style.display = 'block';
+        // Show success toast after a short delay (optimistic update)
+        setTimeout(() => {
+            this.showToast('Lissajous scene started', 'success');
+            // Update UI
+            this.isSceneActive = true;
+            if (btnText && btnLoading) {
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+            this.querySelector('#stop-scene-btn').disabled = false;
+            this.querySelector('#parameters-panel').style.display = 'block';
+        }, 100);
     }
     
     stopScene() {
         if (!this.socket || !this.socket.connected) {
             console.error('Socket not connected');
+            this.showToast('WebSocket not connected', 'error');
             return;
         }
         
         // Send stop scene command
         this.socket.emit('CONTROL_STOP_SCENE', {});
+        
+        // Show feedback
+        this.showToast('Scene stopped', 'info');
         
         // Update UI
         this.isSceneActive = false;
@@ -174,10 +202,45 @@ class SceneControls extends HTMLElement {
         
         const params = this.getCurrentParams();
         
+        // Show updating indicator
+        const updatingIndicator = this.querySelector('#params-updating');
+        if (updatingIndicator) {
+            updatingIndicator.style.display = 'block';
+            setTimeout(() => {
+                if (updatingIndicator) {
+                    updatingIndicator.style.display = 'none';
+                }
+            }, 300);
+        }
+        
         // Send parameter update
         this.socket.emit('CONTROL_UPDATE_PARAMS', {
             params: params
         });
+    }
+    
+    showToast(message, type = 'info') {
+        const container = this.querySelector('#toast-container') || document.body;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        container.appendChild(toast);
+        
+        // Trigger animation
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
     }
     
     getCurrentParams() {

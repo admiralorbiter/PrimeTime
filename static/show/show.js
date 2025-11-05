@@ -21,34 +21,62 @@ class ShowView {
     }
 
     init() {
-        // Initialize canvas renderer
+        // Initialize canvas renderer with error handling
         if (this.canvas) {
-            this.renderer = new Renderer(this.canvas);
-            // Initialize scene manager
-            this.sceneManager = new SceneManager(this.renderer);
-            
-            // Register scenes
-            this.sceneManager.registerScene('lissajous', Lissajous);
-            
-            // Handle canvas resize
-            window.addEventListener('resize', () => {
-                if (this.sceneManager) {
-                    this.sceneManager.handleResize();
-                }
-            });
-            
-            // Start render loop
-            this.renderer.startRenderLoop((ctx, time, deltaTime) => {
-                // Delegate rendering to scene manager
-                if (this.sceneManager) {
-                    this.sceneManager.render(ctx, time, deltaTime);
-                }
-            });
+            try {
+                this.renderer = new Renderer(this.canvas);
+                // Initialize scene manager
+                this.sceneManager = new SceneManager(this.renderer);
+                
+                // Register scenes
+                this.sceneManager.registerScene('lissajous', Lissajous);
+                
+                // Handle canvas resize
+                window.addEventListener('resize', () => {
+                    if (this.sceneManager) {
+                        this.sceneManager.handleResize();
+                    }
+                });
+                
+                // Start render loop
+                this.renderer.startRenderLoop((ctx, time, deltaTime) => {
+                    // Delegate rendering to scene manager
+                    if (this.sceneManager) {
+                        this.sceneManager.render(ctx, time, deltaTime);
+                    }
+                });
+            } catch (error) {
+                console.error('Show View: Failed to initialize renderer:', error);
+                this.showError('Failed to initialize canvas. Please refresh the page.');
+                // Still set up WebSocket for operator communication
+            }
+        } else {
+            console.error('Show View: Canvas element not found');
+            this.showError('Canvas element not found. Please check the page setup.');
         }
+        
+        // Listen for renderer errors
+        document.addEventListener('renderer-error', (event) => {
+            const { error, type } = event.detail;
+            console.error(`Renderer error (${type}):`, error);
+            this.showError(`Canvas error: ${error}`);
+        });
         
         this.setupWebSocket();
         this.startFPSTelemetry();
         console.log('Show View initialized');
+    }
+    
+    showError(message) {
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                errorElement.classList.remove('show');
+            }, 10000);
+        }
     }
 
     setupWebSocket() {

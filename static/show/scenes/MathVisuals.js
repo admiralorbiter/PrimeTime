@@ -21,7 +21,14 @@ export class MathVisuals {
      * @param {Object} params - Scene parameters
      */
     init(params = {}) {
-        this.params = { ...this.getDefaultParams(), ...params };
+        // If scene has validateParams method, use it
+        if (typeof this.validateParams === 'function') {
+            const validated = this.validateParams(params);
+            this.params = { ...this.getDefaultParams(), ...validated };
+        } else {
+            // Otherwise, merge directly
+            this.params = { ...this.getDefaultParams(), ...params };
+        }
         this.isActive = true;
         this.startTime = null; // Will be set on first render
         this.resize();
@@ -41,7 +48,20 @@ export class MathVisuals {
      * @param {Object} newParams - New parameter values
      */
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
+        if (!newParams || typeof newParams !== 'object') {
+            console.warn('MathVisuals: Invalid parameters provided to updateParams');
+            return;
+        }
+        
+        // If scene has validateParams method, use it
+        if (typeof this.validateParams === 'function') {
+            const validated = this.validateParams(newParams);
+            this.params = { ...this.params, ...validated };
+        } else {
+            // Otherwise, merge directly
+            this.params = { ...this.params, ...newParams };
+        }
+        
         this.onParamsChanged();
     }
     
